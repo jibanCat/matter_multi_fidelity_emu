@@ -1,6 +1,16 @@
 """
-Multi-Fidelity emulator with output to be a bin value of
-power spectrum.
+Building multi-Fidelity emulator using many single-output GP.
+
+1. SingleBinGP: the single-fidelity emulator in the paper.
+2. SingleBinLinearGP: the linear multi-fidelity emulator (AR1).
+3. SingleBinNonLinearGP: the non-linear multi-fidelity emulator (NARGP).
+4. SingleBinDeepGP: the deep GP for multi-fidelity (MF-DGP). This one is not
+    mentioned in the paper due to we haven't found a way to fine-tune the
+    hyperparameters.
+
+Most of the model constructions are similar to Emukit's examples, with some
+modifications on the choice of hyperparameters and modelling each output as
+an independent GP (many single-output GP).
 """
 from typing import Tuple, List, Optional, Dict
 
@@ -16,6 +26,7 @@ from emukit.multi_fidelity.convert_lists_to_array import (
     convert_x_list_to_array,
 )
 
+# we made modifications on not using the ARD for high-fidelity
 from .non_linear_multi_fidelity_models.non_linear_multi_fidelity_model import NonLinearMultiFidelityModel, make_non_linear_kernels
 # from emukit.multi_fidelity.models.non_linear_multi_fidelity_model import NonLinearMultiFidelityModel, make_non_linear_kernels
 
@@ -88,40 +99,6 @@ class SingleBinGP:
 
         return param_dict
 
-    @staticmethod
-    def _map_params_to_unit_cube(
-        params: np.ndarray, param_limits: np.ndarray
-    ) -> np.ndarray:
-        """
-        Map the parameters onto a unit cube so that all the variations are
-        similar in magnitude.
-        
-        :param params: (n_points, n_dims) parameter vectors
-        :param param_limits: (n_dim, 2) param_limits is a list 
-            of parameter limits.
-        :return: params_cube, (n_points, n_dims) parameter vectors 
-            in a unit cube.
-        """
-        nparams = np.shape(params)[1]
-        params_cube = map_to_unit_cube_list(params, param_limits)
-        assert params_cube.shape[1] == nparams
-
-        # this caused problems for selecting too few samples, especially for
-        # MF interpolation it's necessary to select only 2~3 points for HF.
-        # So not assertion but print warnings. TODO: using logging instead.
-        #
-        # Check that we span the parameter space
-        # note: this is a unit LH cube spanning from \theta \in [0, 1]^num_dim
-        for i in range(nparams):
-            cond1 = np.max(params_cube[:, i]) > 0.9
-            cond2 = np.min(params_cube[:, i]) < 0.1
-            if cond1 or cond2:
-                print(
-                    "[Warning] the LH cube not spanning from \theta \in [0, 1]^num_dim."
-                )
-
-        return params_cube
-
 class SingleBinLinearGP:
     """
     A thin wrapper around GPy.core.GP that does some input checking and provides
@@ -159,7 +136,7 @@ class SingleBinLinearGP:
         # similar in magnitude.
         normed_param_list = []
         for i in range(n_fidelities):
-            params_cube = self._map_params_to_unit_cube(
+            params_cube = _map_params_to_unit_cube(
                 params_list[i], param_limits_list[i]
             )
 
@@ -298,39 +275,6 @@ class SingleBinLinearGP:
 
         return param_dict
 
-    @staticmethod
-    def _map_params_to_unit_cube(
-        params: np.ndarray, param_limits: np.ndarray
-    ) -> np.ndarray:
-        """
-        Map the parameters onto a unit cube so that all the variations are
-        similar in magnitude.
-        
-        :param params: (n_points, n_dims) parameter vectors
-        :param param_limits: (n_dim, 2) param_limits is a list 
-            of parameter limits.
-        :return: params_cube, (n_points, n_dims) parameter vectors 
-            in a unit cube.
-        """
-        nparams = np.shape(params)[1]
-        params_cube = map_to_unit_cube_list(params, param_limits)
-        assert params_cube.shape[1] == nparams
-
-        # this caused problems for selecting too few samples, especially for
-        # MF interpolation it's necessary to select only 2~3 points for HF.
-        # So not assertion but print warnings. TODO: using logging instead.
-        #
-        # Check that we span the parameter space
-        # note: this is a unit LH cube spanning from \theta \in [0, 1]^num_dim
-        for i in range(nparams):
-            cond1 = np.max(params_cube[:, i]) > 0.9
-            cond2 = np.min(params_cube[:, i]) < 0.1
-            if cond1 or cond2:
-                print(
-                    "[Warning] the LH cube not spanning from \theta \in [0, 1]^num_dim."
-                )
-
-        return params_cube
 
 class SingleBinNonLinearGP:
     """
@@ -369,7 +313,7 @@ class SingleBinNonLinearGP:
         # similar in magnitude.
         normed_param_list = []
         for i in range(n_fidelities):
-            params_cube = self._map_params_to_unit_cube(
+            params_cube = _map_params_to_unit_cube(
                 params_list[i], param_limits_list[i]
             )
 
@@ -458,39 +402,6 @@ class SingleBinNonLinearGP:
             param_dict["bin_{}".format(i)] = this_param_dict
 
         return param_dict
-    @staticmethod
-    def _map_params_to_unit_cube(
-        params: np.ndarray, param_limits: np.ndarray
-    ) -> np.ndarray:
-        """
-        Map the parameters onto a unit cube so that all the variations are
-        similar in magnitude.
-        
-        :param params: (n_points, n_dims) parameter vectors
-        :param param_limits: (n_dim, 2) param_limits is a list 
-            of parameter limits.
-        :return: params_cube, (n_points, n_dims) parameter vectors 
-            in a unit cube.
-        """
-        nparams = np.shape(params)[1]
-        params_cube = map_to_unit_cube_list(params, param_limits)
-        assert params_cube.shape[1] == nparams
-
-        # this caused problems for selecting too few samples, especially for
-        # MF interpolation it's necessary to select only 2~3 points for HF.
-        # So not assertion but print warnings. TODO: using logging instead.
-        #
-        # Check that we span the parameter space
-        # note: this is a unit LH cube spanning from \theta \in [0, 1]^num_dim
-        for i in range(nparams):
-            cond1 = np.max(params_cube[:, i]) > 0.9
-            cond2 = np.min(params_cube[:, i]) < 0.1
-            if cond1 or cond2:
-                print(
-                    "[Warning] the LH cube not spanning from \theta \in [0, 1]^num_dim."
-                )
-
-        return params_cube
 
 class SingleBinDeepGP:
     """
@@ -530,7 +441,7 @@ class SingleBinDeepGP:
         # similar in magnitude.
         normed_param_list = []
         for i in range(n_fidelities):
-            params_cube = self._map_params_to_unit_cube(
+            params_cube = _map_params_to_unit_cube(
                 params_list[i], param_limits_list[i]
             )
 
@@ -579,36 +490,35 @@ class SingleBinDeepGP:
         """
         NotImplementedError
 
-    @staticmethod
-    def _map_params_to_unit_cube(
-        params: np.ndarray, param_limits: np.ndarray
-    ) -> np.ndarray:
-        """
-        Map the parameters onto a unit cube so that all the variations are
-        similar in magnitude.
-        
-        :param params: (n_points, n_dims) parameter vectors
-        :param param_limits: (n_dim, 2) param_limits is a list 
-            of parameter limits.
-        :return: params_cube, (n_points, n_dims) parameter vectors 
-            in a unit cube.
-        """
-        nparams = np.shape(params)[1]
-        params_cube = map_to_unit_cube_list(params, param_limits)
-        assert params_cube.shape[1] == nparams
+def _map_params_to_unit_cube(
+    params: np.ndarray, param_limits: np.ndarray
+) -> np.ndarray:
+    """
+    Map the parameters onto a unit cube so that all the variations are
+    similar in magnitude.
+    
+    :param params: (n_points, n_dims) parameter vectors
+    :param param_limits: (n_dim, 2) param_limits is a list 
+        of parameter limits.
+    :return: params_cube, (n_points, n_dims) parameter vectors 
+        in a unit cube.
+    """
+    nparams = np.shape(params)[1]
+    params_cube = map_to_unit_cube_list(params, param_limits)
+    assert params_cube.shape[1] == nparams
 
-        # this caused problems for selecting too few samples, especially for
-        # MF interpolation it's necessary to select only 2~3 points for HF.
-        # So not assertion but print warnings. TODO: using logging instead.
-        #
-        # Check that we span the parameter space
-        # note: this is a unit LH cube spanning from \theta \in [0, 1]^num_dim
-        for i in range(nparams):
-            cond1 = np.max(params_cube[:, i]) > 0.9
-            cond2 = np.min(params_cube[:, i]) < 0.1
-            if cond1 or cond2:
-                print(
-                    "[Warning] the LH cube not spanning from \theta \in [0, 1]^num_dim."
-                )
+    # this caused problems for selecting too few samples, especially for
+    # MF interpolation it's necessary to select only 2~3 points for HF.
+    # So not assertion but print warnings. TODO: using logging instead.
+    #
+    # Check that we span the parameter space
+    # note: this is a unit LH cube spanning from \theta \in [0, 1]^num_dim
+    for i in range(nparams):
+        cond1 = np.max(params_cube[:, i]) > 0.9
+        cond2 = np.min(params_cube[:, i]) < 0.1
+        if cond1 or cond2:
+            print(
+                "[Warning] the LH cube not spanning from \theta \in [0, 1]^num_dim."
+            )
 
-        return params_cube
+    return params_cube
