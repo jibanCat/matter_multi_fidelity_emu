@@ -14,6 +14,7 @@ an independent GP (many single-output GP).
 """
 from typing import Tuple, List, Optional, Dict
 
+import logging
 import numpy as np
 
 import GPy
@@ -31,6 +32,8 @@ from .non_linear_multi_fidelity_models.non_linear_multi_fidelity_model import No
 # from emukit.multi_fidelity.models.non_linear_multi_fidelity_model import NonLinearMultiFidelityModel, make_non_linear_kernels
 
 from .latin_hypercube import map_to_unit_cube_list
+
+_log = logging.getLogger(__name__)
 
 class SingleBinGP:
     """
@@ -56,12 +59,15 @@ class SingleBinGP:
 
         self.gpy_models = gpy_models
 
+        self.name = "single_fidelity"
+
     def optimize_restarts(self, n_optimization_restarts: int) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
         models = []
 
+        _log.info("\n --- Optimization: ---\n".format(self.name))
         for i,gp in enumerate(self.gpy_models):
             gp.optimize_restarts(n_optimization_restarts)
             models.append(gp)
@@ -107,22 +113,15 @@ class SingleBinLinearGP:
     GP can take.
     And normalize the scale of powerspecs.
 
-    :param params_list:  (n_fidelities, n_points, n_dims) list of parameter vectors.
-    :param kf_list:      (n_fidelities, k_modes)
-    :param powers_list:  (n_fidelities, n_points, k modes) list of flux power spectra.
-    :param param_limits: (n_fidelities, n_dim, 2) list of param_limits.
-
+    :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
+    :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
     :param n_fidelities: number of fidelities stored in the list.
-
-    :param n_restarts (int): number of optimization restarts you want in GPy.
     """
 
     def __init__(
         self,
-        params_list: List[np.ndarray],
-        kf_list: List[np.ndarray],
-        param_limits_list: List[np.ndarray],
-        powers_list: List[np.ndarray],
+        X_train: List[np.ndarray],
+        Y_train: List[np.ndarray],
         kernel_list: Optional[List],
         n_fidelities: int,
         likelihood: GPy.likelihoods.Likelihood = None,
@@ -130,21 +129,11 @@ class SingleBinLinearGP:
         # a list of GP emulators
         gpy_models: List = []
 
-        self.n_fidelities = len(params_list)
-
-        # Map the parameters onto a unit cube so that all the variations are
-        # similar in magnitude.
-        normed_param_list = []
-        for i in range(n_fidelities):
-            params_cube = _map_params_to_unit_cube(
-                params_list[i], param_limits_list[i]
-            )
-
-            normed_param_list.append(params_cube)
+        self.n_fidelities = len(X_train)
 
         # convert into X,Y for MultiOutputGP
         # not normalize due to no improvements
-        X, Y = convert_xy_lists_to_arrays(normed_param_list, powers_list)
+        X, Y = convert_xy_lists_to_arrays(X_train, Y_train)
 
         # linear multi-fidelity setup
         if X.ndim != 2:
@@ -171,7 +160,7 @@ class SingleBinLinearGP:
             # each parameter, as they may have very different physical properties.
             kernel_list = []
             for j in range(n_fidelities):
-                nparams = np.shape(params_list[j])[1]
+                nparams = np.shape(X_train[j])[1]
 
                 # kernel = GPy.kern.Linear(nparams, ARD=True)
                 # kernel = GPy.kern.RatQuad(nparams, ARD=True)
@@ -191,11 +180,15 @@ class SingleBinLinearGP:
 
         self.gpy_models = gpy_models
 
+        self.name = "ar1"
+
     def optimize(self, n_optimization_restarts: int) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
         models = []
+
+        _log.info("\n--- Optimization ---\n".format(self.name))
 
         for i,gp in enumerate(self.gpy_models):
             # fix noise and optimize
@@ -284,22 +277,16 @@ class SingleBinNonLinearGP:
     GP can take.
     And normalize the scale of powerspecs.
 
-    :param params_list:  (n_fidelities, n_points, n_dims) list of parameter vectors.
-    :param kf_list:      (n_fidelities, k_modes)
-    :param powers_list:  (n_fidelities, n_points, k modes) list of flux power spectra.
-    :param param_limits: (n_fidelities, n_dim, 2) list of param_limits.
-
+    :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
+    :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
     :param n_fidelities: number of fidelities stored in the list.
-
-    :param n_restarts (int): number of optimization restarts you want in GPy.
+    :param optimization_restarts (int): number of optimization restarts you want in GPy.
     """
 
     def __init__(
         self,
-        params_list: List[np.ndarray],
-        kf_list: List[np.ndarray],
-        param_limits_list: List[np.ndarray],
-        powers_list: List[np.ndarray],
+        X_train: List[np.ndarray],
+        Y_train: List[np.ndarray],
         n_fidelities: int,
         n_samples: int = 100,
         optimization_restarts: int = 5,
@@ -307,21 +294,11 @@ class SingleBinNonLinearGP:
         # a list of GP emulators
         models: List = []
 
-        self.n_fidelities = len(params_list)
-
-        # Map the parameters onto a unit cube so that all the variations are
-        # similar in magnitude.
-        normed_param_list = []
-        for i in range(n_fidelities):
-            params_cube = _map_params_to_unit_cube(
-                params_list[i], param_limits_list[i]
-            )
-
-            normed_param_list.append(params_cube)
+        self.n_fidelities = len(X_train)
 
         # convert into X,Y for MultiOutputGP
         # not normalize due to no improvements
-        X, Y = convert_xy_lists_to_arrays(normed_param_list, powers_list)
+        X, Y = convert_xy_lists_to_arrays(X_train, Y_train)
 
         # linear multi-fidelity setup
         if X.ndim != 2:
@@ -349,10 +326,14 @@ class SingleBinNonLinearGP:
 
         self.models = models
 
+        self.name = "nargp"
+
     def optimize(self) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
+
+        _log.info("\n--- Optimization: ---\n".format(self.name))
 
         for i,gp in enumerate(self.models):
             print("[Info] Optimizing {} bin ...".format(i))
@@ -411,22 +392,15 @@ class SingleBinDeepGP:
     GP can take.
     And normalize the scale of powerspecs.
 
-    :param params_list:  (n_fidelities, n_points, n_dims) list of parameter vectors.
-    :param kf_list:      (n_fidelities, k_modes)
-    :param powers_list:  (n_fidelities, n_points, k modes) list of flux power spectra.
-    :param param_limits: (n_fidelities, n_dim, 2) list of param_limits.
-
+    :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
+    :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
     :param n_fidelities: number of fidelities stored in the list.
-
-    :param n_restarts (int): number of optimization restarts you want in GPy.
     """
 
     def __init__(
         self,
-        params_list: List[np.ndarray],
-        kf_list: List[np.ndarray],
-        param_limits_list: List[np.ndarray],
-        powers_list: List[np.ndarray],
+        X_train: List[np.ndarray],
+        Y_train: List[np.ndarray],
         n_fidelities: int,
     ):
         # DGP model
@@ -435,31 +409,25 @@ class SingleBinDeepGP:
         # a list of GP emulators
         models: List = []
 
-        self.n_fidelities = len(params_list)
-
-        # Map the parameters onto a unit cube so that all the variations are
-        # similar in magnitude.
-        normed_param_list = []
-        for i in range(n_fidelities):
-            params_cube = _map_params_to_unit_cube(
-                params_list[i], param_limits_list[i]
-            )
-
-            normed_param_list.append(params_cube)
+        self.n_fidelities = len(X_train)
 
         # make a GP on each P(k) bin
-        for i in range(powers_list[0].shape[1]):
+        for i in range(Y_train[0].shape[1]):
 
-            model = MultiFidelityDeepGP(normed_param_list, [power[:, [i]] for power in powers_list])
+            model = MultiFidelityDeepGP(X_train, [power[:, [i]] for power in Y_train])
 
             models.append(model)
 
         self.models = models
 
+        self.name = "dgp"
+
     def optimize(self) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
+
+        _log.info("\n--- Optimization ---\n".format(self.name))
 
         for i,gp in enumerate(self.models):
             print("[Info] Optimizing {} bin ...".format(i))
@@ -506,19 +474,5 @@ def _map_params_to_unit_cube(
     nparams = np.shape(params)[1]
     params_cube = map_to_unit_cube_list(params, param_limits)
     assert params_cube.shape[1] == nparams
-
-    # this caused problems for selecting too few samples, especially for
-    # MF interpolation it's necessary to select only 2~3 points for HF.
-    # So not assertion but print warnings. TODO: using logging instead.
-    #
-    # Check that we span the parameter space
-    # note: this is a unit LH cube spanning from \theta \in [0, 1]^num_dim
-    for i in range(nparams):
-        cond1 = np.max(params_cube[:, i]) > 0.9
-        cond2 = np.min(params_cube[:, i]) < 0.1
-        if cond1 or cond2:
-            print(
-                "[Warning] the LH cube not spanning from \theta \in [0, 1]^num_dim."
-            )
 
     return params_cube
