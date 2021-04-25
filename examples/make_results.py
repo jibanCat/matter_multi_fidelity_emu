@@ -126,7 +126,6 @@ def do_benchmark(
     means_hfonly, vars_hfonly, pred_exacts_hfonly = validate_sf(data, model=hf_only)
     means_lfonly, vars_lfonly, pred_exacts_lfonly = validate_sf(data, model=lf_only)
 
-
     # versus HF
     do_emulator_error_plots(
         data,
@@ -194,9 +193,11 @@ def do_emulator_error_plots(
 
     # mean emulation error
     emulator_errors = np.abs(np.array(pred_exacts_mf) - 1)
-    plt.loglog(10**data.kf, np.mean(emulator_errors, axis=0), label=label_mf, color="C0")
+    plt.loglog(
+        10 ** data.kf, np.mean(emulator_errors, axis=0), label=label_mf, color="C0"
+    )
     plt.fill_between(
-        10**data.kf,
+        10 ** data.kf,
         y1=np.min(emulator_errors, axis=0),
         y2=np.max(emulator_errors, axis=0),
         color="C0",
@@ -204,9 +205,11 @@ def do_emulator_error_plots(
     )
 
     emulator_errors = np.abs(np.array(pred_exacts_sf) - 1)
-    plt.loglog(10**data.kf, np.mean(emulator_errors, axis=0), label=label_sf, color="C1")
+    plt.loglog(
+        10 ** data.kf, np.mean(emulator_errors, axis=0), label=label_sf, color="C1"
+    )
     plt.fill_between(
-        10**data.kf,
+        10 ** data.kf,
         y1=np.min(emulator_errors, axis=0),
         y2=np.max(emulator_errors, axis=0),
         color="C1",
@@ -232,9 +235,11 @@ def do_pred_exact(
     """
     for i, pred_exact_mf in enumerate(pred_exacts_mf):
         if i == 0:
-            plt.semilogx(10**data.kf, pred_exact_mf, label=label_mf, color="C{}".format(i))
+            plt.semilogx(
+                10 ** data.kf, pred_exact_mf, label=label_mf, color="C{}".format(i)
+            )
         else:
-            plt.semilogx(10**data.kf, pred_exact_mf, color="C{}".format(i))
+            plt.semilogx(10 ** data.kf, pred_exact_mf, color="C{}".format(i))
 
     plt.legend()
     plt.ylim(0.96, 1.06)
@@ -245,36 +250,53 @@ def do_pred_exact(
     plt.clf()
 
 
-# def plot_parameters(X_train: List[np.ndarray], X_test: List[np.ndarray]):
-#     """
-#     Plot the selected samples with all other samples in the input data.
-#     This would enable us to investigate locations of the selected training samples.
-#     """
-#     parameter_names = emu.parameter_space.parameter_names
+def plot_parameters(
+    X_train: List[np.ndarray],
+    X_test: List[np.ndarray],
+    parameter_names: List[str] = [
+        r"$\Omega_0$",
+        r"$\Omega_b$",
+        r"$h$",
+        r"$A_s$",
+        r"$n_s$",
+    ],
+):
+    """
+    Plot the selected samples with all other samples in the input data.
+    This would enable us to investigate locations of the selected training samples.
+    """
+    n_parameters = X_train[0].shape[1]
 
-#     n_parameters = emu.X.shape[1]
-#     bounds = emu.parameter_space.get_bounds()
+    for i in range(n_parameters):
+        for j in range(i + 1, n_parameters):
+            plt.scatter(
+                X_train[0][:, i],
+                X_train[0][:, j],
+                marker="o",
+                label="LowRes training data",
+                color="C0",
+                s=100,
+            )
+            plt.scatter(
+                X_train[1][:, i],
+                X_train[1][:, j],
+                marker="o",
+                label="HighRes training data",
+                color="C1",
+                s=40,
+            )
+            plt.scatter(
+                X_test[0][:, i],
+                X_test[0][:, j],
+                marker="x",
+                label="Test spectra",
+                color="C2",
+                s=100,
+            )
+            plt.legend()
+            plt.xlabel(parameter_names[i])
+            plt.ylabel(parameter_names[j])
 
-#     for i in range(n_parameters):
-#         for j in range(i + 1, n_parameters):
-#             plt.scatter(emu.X[:, i], emu.X[:, j], marker="o")
-#             plt.scatter(
-#                 emu.X[selected_ind, i],
-#                 emu.X[selected_ind, j],
-#                 marker="o",
-#                 label="HighRes training data",
-#             )
-#             plt.legend()
-#             plt.xlabel(parameter_names[i])
-#             plt.ylabel(parameter_names[j])
-#             plt.xlim(bounds[i][0], bounds[i][1])
-#             plt.ylim(bounds[j][0], bounds[j][1])
-#             save_figure(
-#                 os.path.join(
-#                     "images",
-#                     outdir,
-#                     "{}-{}".format(parameter_names[i], parameter_names[j]),
-#                 )
-#             )
-#             plt.clf()
-#             plt.close()
+            save_figure("nested_" + parameter_names[i] + parameter_names[j])
+            plt.close()
+            plt.clf()
