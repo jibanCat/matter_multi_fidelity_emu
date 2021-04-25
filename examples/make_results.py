@@ -114,9 +114,6 @@ def do_benchmark(
     hf_only = SingleBinGP(data.X_train_norm[-1], data.Y_train[-1])
     lf_only = SingleBinGP(data.X_train_norm[0], data.Y_train[0])
 
-    import pdb
-    pdb.set_trace()
-
     # optimize each model
     ar1.optimize(n_optimization_restarts=n_optimization_restarts)
     nargp.optimize()
