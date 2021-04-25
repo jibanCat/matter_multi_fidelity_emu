@@ -200,7 +200,7 @@ class SingleBinLinearGP:
 
             model = GPyMultiOutputWrapper(gp, n_outputs=self.n_fidelities, n_optimization_restarts=n_optimization_restarts)
 
-            print("[Info] Optimizing {} bin ...".format(i))
+            _log.info("\n[Info] Optimizing {} bin ...\n".format(i))
 
             # first step optimization with fixed noise
             model.gpy_model.optimize_restarts(
@@ -336,7 +336,7 @@ class SingleBinNonLinearGP:
         _log.info("\n--- Optimization: ---\n".format(self.name))
 
         for i,gp in enumerate(self.models):
-            print("[Info] Optimizing {} bin ...".format(i))
+            _log.info("\n [Info] Optimizing {} bin ... \n".format(i))
 
             for m in gp.models:
                 m.Gaussian_noise.variance.fix(1e-6)
@@ -430,7 +430,7 @@ class SingleBinDeepGP:
         _log.info("\n--- Optimization ---\n".format(self.name))
 
         for i,gp in enumerate(self.models):
-            print("[Info] Optimizing {} bin ...".format(i))
+            _log.info("\n [Info] Optimizing {} bin ... \n".format(i))
             gp.optimize()
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
