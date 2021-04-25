@@ -112,7 +112,10 @@ def do_benchmark(
     # Single-fidelity
     # high-fidelity only emulator
     hf_only = SingleBinGP(data.X_train_norm[-1], data.Y_train[-1])
-    lf_only = SingleBinGP(data.X_train_norm[-1], data.Y_train[-1])
+    lf_only = SingleBinGP(data.X_train_norm[0], data.Y_train[0])
+
+    import pdb
+    pdb.set_trace()
 
     # optimize each model
     ar1.optimize(n_optimization_restarts=n_optimization_restarts)
@@ -123,8 +126,8 @@ def do_benchmark(
     # testing set
     means_ar1, vars_ar1, pred_exacts_ar1 = validate_mf(data, model=ar1)
     means_nargp, vars_nargp, pred_exacts_nargp = validate_mf(data, model=nargp)
-    means_hfonly, vars_hfonly, pred_exacts_hfonly = validate_mf(data, model=hf_only)
-    means_lfonly, vars_lfonly, pred_exacts_lfonly = validate_mf(data, model=lf_only)
+    means_hfonly, vars_hfonly, pred_exacts_hfonly = validate_sf(data, model=hf_only)
+    means_lfonly, vars_lfonly, pred_exacts_lfonly = validate_sf(data, model=lf_only)
 
 
     # versus HF
@@ -194,9 +197,9 @@ def do_emulator_error_plots(
 
     # mean emulation error
     emulator_errors = np.abs(np.array(pred_exacts_mf) - 1)
-    plt.loglog(data.kf, np.mean(emulator_errors, axis=0), label=label_mf, color="C0")
+    plt.loglog(10**data.kf, np.mean(emulator_errors, axis=0), label=label_mf, color="C0")
     plt.fill_between(
-        data.kf,
+        10**data.kf,
         y1=np.min(emulator_errors, axis=0),
         y2=np.max(emulator_errors, axis=0),
         color="C0",
@@ -204,9 +207,9 @@ def do_emulator_error_plots(
     )
 
     emulator_errors = np.abs(np.array(pred_exacts_sf) - 1)
-    plt.loglog(data.kf, np.mean(emulator_errors, axis=0), label=label_sf, color="C1")
+    plt.loglog(10**data.kf, np.mean(emulator_errors, axis=0), label=label_sf, color="C1")
     plt.fill_between(
-        data.kf,
+        10**data.kf,
         y1=np.min(emulator_errors, axis=0),
         y2=np.max(emulator_errors, axis=0),
         color="C1",
@@ -232,13 +235,49 @@ def do_pred_exact(
     """
     for i, pred_exact_mf in enumerate(pred_exacts_mf):
         if i == 0:
-            plt.semilogx(data.kf, pred_exact_mf, label=label_mf, color="C{}".format(i))
+            plt.semilogx(10**data.kf, pred_exact_mf, label=label_mf, color="C{}".format(i))
         else:
-            plt.semilogx(data.kf, pred_exact_mf, color="C{}".format(i))
+            plt.semilogx(10**data.kf, pred_exact_mf, color="C{}".format(i))
 
     plt.legend()
+    plt.ylim(0.96, 1.06)
     plt.xlabel(r"$k (h/\mathrm{Mpc})$")
     plt.ylabel(r"$\mathrm{Predicted/Exact}$")
     save_figure("predict_exact_" + figure_name)
     plt.close()
     plt.clf()
+
+
+# def plot_parameters(X_train: List[np.ndarray], X_test: List[np.ndarray]):
+#     """
+#     Plot the selected samples with all other samples in the input data.
+#     This would enable us to investigate locations of the selected training samples.
+#     """
+#     parameter_names = emu.parameter_space.parameter_names
+
+#     n_parameters = emu.X.shape[1]
+#     bounds = emu.parameter_space.get_bounds()
+
+#     for i in range(n_parameters):
+#         for j in range(i + 1, n_parameters):
+#             plt.scatter(emu.X[:, i], emu.X[:, j], marker="o")
+#             plt.scatter(
+#                 emu.X[selected_ind, i],
+#                 emu.X[selected_ind, j],
+#                 marker="o",
+#                 label="HighRes training data",
+#             )
+#             plt.legend()
+#             plt.xlabel(parameter_names[i])
+#             plt.ylabel(parameter_names[j])
+#             plt.xlim(bounds[i][0], bounds[i][1])
+#             plt.ylim(bounds[j][0], bounds[j][1])
+#             save_figure(
+#                 os.path.join(
+#                     "images",
+#                     outdir,
+#                     "{}-{}".format(parameter_names[i], parameter_names[j]),
+#                 )
+#             )
+#             plt.clf()
+#             plt.close()
