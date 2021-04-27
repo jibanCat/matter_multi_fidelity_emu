@@ -108,10 +108,7 @@ class SingleBinGP:
 class SingleBinLinearGP:
     """
     A thin wrapper around GPy.core.GP that does some input checking and provides
-    a default likelihood.
-    Also transform the multi-fidelities params and powerspecs to the Multi-Output
-    GP can take.
-    And normalize the scale of powerspecs.
+    a default likelihood. Also model each k bin as an independent GP.
 
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
     :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
@@ -271,16 +268,14 @@ class SingleBinLinearGP:
 
 class SingleBinNonLinearGP:
     """
-    A thin wrapper around GPy.core.GP that does some input checking and provides
-    a default likelihood.
-    Also transform the multi-fidelities params and powerspecs to the Multi-Output
-    GP can take.
-    And normalize the scale of powerspecs.
+    A thin wrapper around NonLinearMultiFidelityModel. It models each k input as
+    an independent GP.
 
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
     :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
     :param n_fidelities: number of fidelities stored in the list.
-    :param optimization_restarts (int): number of optimization restarts you want in GPy.
+    :param n_samples: Number of samples to use to do quasi-Monte-Carlo integration at each fidelity.
+    :param optimization_restarts: number of optimization restarts you want in GPy.
     """
 
     def __init__(
@@ -288,8 +283,9 @@ class SingleBinNonLinearGP:
         X_train: List[np.ndarray],
         Y_train: List[np.ndarray],
         n_fidelities: int,
-        n_samples: int = 100,
-        optimization_restarts: int = 5,
+        n_samples: int = 500,
+        optimization_restarts: int = 30,
+        turn_off_bias: bool = False,
     ):
         # a list of GP emulators
         models: List = []
@@ -318,6 +314,7 @@ class SingleBinNonLinearGP:
             base_kernel_1 = GPy.kern.RBF
             kernels = make_non_linear_kernels(
                 base_kernel_1, n_fidelities, X.shape[1] - 1, ARD=True, n_output_dim=1,
+                turn_off_bias=turn_off_bias,
             )  # -1 for the multi-fidelity labels
 
             model = NonLinearMultiFidelityModel(X, Y[:, [i]], n_fidelities, kernels=kernels, verbose=True, n_samples=n_samples, optimization_restarts=optimization_restarts)
@@ -386,11 +383,16 @@ class SingleBinNonLinearGP:
 
 class SingleBinDeepGP:
     """
-    A thin wrapper around GPy.core.GP that does some input checking and provides
-    a default likelihood.
-    Also transform the multi-fidelities params and powerspecs to the Multi-Output
-    GP can take.
-    And normalize the scale of powerspecs.
+    A thin wrapper around MultiFidelityDeepGP. Help to handle inputs.
+    
+    To run this model, you need additional packages:
+    - tensorflow==1.8
+    - gpflow==1.3 (Note: it said 1.1.1 on the website, but the code actually only works
+        for 1.3 version)
+    - pip install git+https://github.com/ICL-SML/Doubly-Stochastic-DGP.git
+
+    Warning: this deepGP code hasn't fully tested on the matter power spectrum we have
+        here. Be aware you might need more HR samples for train it.
 
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
     :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.

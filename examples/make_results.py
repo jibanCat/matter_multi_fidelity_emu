@@ -79,6 +79,7 @@ def do_benchmark(
     folder: str = "data/50_LR_3_HR",
     n_optimization_restarts: int = 30,
     n_fidelities: int = 2,
+    turn_off_bias_nargp: bool = False,
 ):
     """
     Train and test models, and plot
@@ -87,6 +88,19 @@ def do_benchmark(
     3. parameter plots
 
     Only support 2 fidelities now.
+
+    Parameters:
+    ----
+    folder: the folder contains the the training and testing data. Wee data/50_LR_3_HR
+        for example.
+    n_optimization_restarts: number of optimization you want to repeat. The GPy will
+        choose the best hyperparameters among those repetitions. More is better.
+    n_fidelities: only supports 2 now. You may try a larger number but some tweaks might
+        be needed.
+    turn_off_bias_nargp: not adding bias kernel for NARGP in high-fidelity. In case you
+        find the optimization result is not stable, try turning off bias kernel. Some time
+        the training data at high-fidelity is not enough to train the bias kernel and
+        induce some unstable predictions.
     """
 
     # get training and testing data. Normalization included.
@@ -107,6 +121,7 @@ def do_benchmark(
         n_fidelities=n_fidelities,
         n_samples=500,
         optimization_restarts=n_optimization_restarts,
+        turn_off_bias=turn_off_bias_nargp,
     )
 
     # Single-fidelity
