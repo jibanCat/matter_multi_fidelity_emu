@@ -28,7 +28,8 @@ from emukit.multi_fidelity.convert_lists_to_array import convert_y_list_to_array
 
 def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
                             n_fidelities: int, n_input_dims: int, ARD: bool=False,
-                            n_output_dim: int = 1) -> List:
+                            n_output_dim: int = 1,
+                            turn_off_bias: bool = False) -> List:
     """
     This function takes a base kernel class and constructs the structured multi-fidelity kernels
 
@@ -40,11 +41,16 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
     .. math
         k_{base}(x, x')k_{base}(y_{i-1}, y{i-1}') + k_{base}(x, x')
 
+    If turn off bias (added by jibancat):
+    .. math
+        k_{base}(x, x')k_{base}(y_{i-1}, y{i-1}')
+
     :param base_kernel_class: GPy class definition of the kernel type to construct the kernels at
     :param n_fidelities: Number of fidelities in the model. A kernel will be returned for each fidelity
     :param n_input_dims: The dimensionality of the input.
     :param ARD: If True, uses different lengthscales for different dimensions. Otherwise the same lengthscale is used
                 for all dimensions. Default False.
+    :param turn_off_bias: do not apply bias kernel for high-fidelity.
     :return: A list of kernels with one entry for each fidelity starting from lowest to highest fidelity.
     """
 
@@ -58,7 +64,10 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
         scale_kernel = base_kernel_class(n_output_dim, active_dims=out_dims_list, name='previous_fidelity_' + fidelity_name)
         bias_kernel = base_kernel_class(n_input_dims, active_dims=base_dims_list,
                                         ARD=False, name='bias_kernel_no_ARD_' + fidelity_name)
-        kernels.append(interaction_kernel * scale_kernel + bias_kernel)
+        if turn_off_bias:
+            kernels.append(interaction_kernel * scale_kernel)
+        else:
+            kernels.append(interaction_kernel * scale_kernel + bias_kernel)
     return kernels
 
 
