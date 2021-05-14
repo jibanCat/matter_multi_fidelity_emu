@@ -1,5 +1,13 @@
 # A multi-fidelity emulator for the matter power spectrum from MP-Gadget
 
+The code is derived from the multi-fidelity emulator code reported in
+
+> M-F Ho, S Bird, and C Shelton. A Multi-Fidelity Emulator for 
+> the Matter Power Spectrum using Gaussian Processes.
+> [arXiv:2105.01081 [astro-ph.CO]](https://arxiv.org/abs/2105.01081),
+
+including the matter power spectrum data (z=0) to reproduce the multi-fidelity trained with 50 low-fidelity simulations and 3 high-fidelity simulations.
+
 Requirements:
 - Python 3.6+
 - numpy
