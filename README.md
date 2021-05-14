@@ -6,7 +6,7 @@ The code is derived from the multi-fidelity emulator code reported in
 > the Matter Power Spectrum using Gaussian Processes.
 > [arXiv:2105.01081 [astro-ph.CO]](https://arxiv.org/abs/2105.01081),
 
-including the matter power spectrum data (z=0) to reproduce the multi-fidelity trained with 50 low-fidelity simulations and 3 high-fidelity simulations.
+including the matter power spectrum data (z=0) to reproduce the multi-fidelity emulator trained with 50 low-fidelity simulations and 3 high-fidelity simulations.
 
 Requirements:
 - Python 3.6+
