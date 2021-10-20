@@ -7,6 +7,9 @@ Building multi-Fidelity emulator using many single-output GP.
 4. SingleBinDeepGP: the deep GP for multi-fidelity (MF-DGP). This one is not
     mentioned in the paper due to we haven't found a way to fine-tune the
     hyperparameters.
+5. SingleBinNonLinearMISO: the non-linear adoption of NARGP in multi-information
+    source modelling. Take multiple low-fidelity input while only has two
+    fidelities.
 
 Most of the model constructions are similar to Emukit's examples, with some
 modifications on the choice of hyperparameters and modelling each output as
@@ -30,6 +33,7 @@ from emukit.multi_fidelity.convert_lists_to_array import (
 # we made modifications on not using the ARD for high-fidelity
 from .non_linear_multi_fidelity_models.non_linear_multi_fidelity_model import NonLinearMultiFidelityModel, make_non_linear_kernels
 # from emukit.multi_fidelity.models.non_linear_multi_fidelity_model import NonLinearMultiFidelityModel, make_non_linear_kernels
+from .non_linear_multi_fidelity_models import multi_information_sources as miso
 
 from .latin_hypercube import map_to_unit_cube_list
 
@@ -459,6 +463,128 @@ class SingleBinDeepGP:
         Save hyperparameters into a dict
         """
         NotImplementedError
+
+
+class SingleBinNonLinearMISO:
+    """
+    A thin wrapper around NonLinearMultiInformationModel. It models each k input as
+    an independent GP. Note that this is jibancat's manual adoption on multi-information
+    source modelling using NARGP. TODO: Some more tests are required to test stability.
+
+    Note: for multi-information source modelling, index 0 means the true simulation.
+    Indices after 1 are for low-fidelity information sources.
+
+    :param X_train:  (n_IS, n_points, n_dims) list of parameter vectors.
+    :param Y_train:  (n_IS, n_points, k modes) list of power spectra.
+    :param n_IS: number of information sources stored in the list.
+    :param n_samples: Number of samples to use to do quasi-Monte-Carlo integration at each fidelity.
+    :param optimization_restarts: number of optimization restarts you want in GPy.
+    """
+
+    def __init__(
+        self,
+        X_train: List[np.ndarray],
+        Y_train: List[np.ndarray],
+        n_IS: int,
+        n_samples: int = 500,
+        optimization_restarts: int = 30,
+    ):
+        # a list of GP emulators
+        models: List = []
+
+        self.n_IS = len(X_train) - 1
+        assert self.n_IS == n_IS
+
+        # convert into X,Y for MultiOutputGP
+        # not normalize due to no improvements
+        X, Y = convert_xy_lists_to_arrays(X_train, Y_train)
+
+        # linear multi-fidelity setup
+        if X.ndim != 2:
+            raise ValueError("X should be 2d")
+
+        if Y.ndim != 2:
+            raise ValueError("Y should be 2d")
+
+        if np.any(X[:, -1] > n_IS):
+            raise ValueError(
+                "One or more points has a higher fidelity index than number of information sources"
+            )
+
+        # make a GP on each P(k) bin
+        for i in range(Y.shape[1]):
+            # make GP non linear MISO kernel
+            base_kernel_1 = GPy.kern.RBF
+            kernels = miso.make_non_linear_kernels(
+                base_kernel_1, n_IS, X.shape[1] - 1, ARD=True, n_output_dim=1,
+            )
+
+            model = miso.NonLinearMultiInformationModel(X, Y[:, [i]], n_IS, kernels=kernels, verbose=True, n_samples=n_samples, optimization_restarts=optimization_restarts)
+
+            models.append(model)
+
+        self.models = models
+
+        self.name = "miso"
+
+    def optimize(self) -> None:
+        """
+        Optimize GP on each bin of the power spectrum.
+        """
+
+        _log.info("\n--- Optimization: ---\n".format(self.name))
+
+        for i,gp in enumerate(self.models):
+            _log.info("\n [Info] Optimizing {} bin ... \n".format(i))
+
+            for m in gp.models:
+                m.Gaussian_noise.variance.fix(1e-6)
+            
+            gp.optimize()
+
+            for m in gp.models:
+                m.Gaussian_noise.variance.unfix()
+            
+            gp.optimize()
+
+
+    def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Predicts mean and variance for fidelity specified by last column of X.
+        Note that we predict from gp from each k bin.
+
+        For MISO, current only support predicting the true label; should specify fidelity=1 for
+        predicting true label.
+
+        :param X: point(s) at which to predict
+        :return: predicted P(all k bins) (mean, variance) at X
+        """
+        means = np.full((X.shape[0], len(self.models)), fill_value=np.nan)
+        variances = np.full((X.shape[0], len(self.models)), fill_value=np.nan)
+
+        for i,model in enumerate(self.models):
+            mean, variance = model.predict(X)
+
+            means[:, i] = mean[:, 0]
+            variances[:, i] = variance[:, 0]
+
+        return means, variances
+
+    def to_dict(self) -> Dict:
+        """
+        Save hyperparameters into a dict
+        """
+        param_dict = {}
+
+        for i,model in enumerate(self.models):
+            this_param_dict = {}
+            # append a list of kernel paramaters
+            for j, m in enumerate(model.models):
+                this_param_dict["fidelity_{}".format(j)] = m.kern.to_dict()
+
+            param_dict["bin_{}".format(i)] = this_param_dict
+
+        return param_dict
 
 def _map_params_to_unit_cube(
     params: np.ndarray, param_limits: np.ndarray
