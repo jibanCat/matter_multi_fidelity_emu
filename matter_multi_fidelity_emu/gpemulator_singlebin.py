@@ -111,7 +111,7 @@ class SingleBinLinearGP:
     a default likelihood. Also model each k bin as an independent GP.
 
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
-    :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
+    :param Y_train:  (n_fidelities, n_points, k modes) list of matter power spectra.
     :param n_fidelities: number of fidelities stored in the list.
     """
 
@@ -272,7 +272,7 @@ class SingleBinNonLinearGP:
     an independent GP.
 
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
-    :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
+    :param Y_train:  (n_fidelities, n_points, k modes) list of matter power spectra.
     :param n_fidelities: number of fidelities stored in the list.
     :param n_samples: Number of samples to use to do quasi-Monte-Carlo integration at each fidelity.
     :param optimization_restarts: number of optimization restarts you want in GPy.
@@ -395,7 +395,7 @@ class SingleBinDeepGP:
         here. Be aware you might need more HR samples for train it.
 
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
-    :param Y_train:  (n_fidelities, n_points, k modes) list of flux power spectra.
+    :param Y_train:  (n_fidelities, n_points, k modes) list of matter power spectra.
     :param n_fidelities: number of fidelities stored in the list.
     """
 

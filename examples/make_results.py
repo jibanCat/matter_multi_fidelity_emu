@@ -91,7 +91,7 @@ def do_benchmark(
 
     Parameters:
     ----
-    folder: the folder contains the the training and testing data. Wee data/50_LR_3_HR
+    folder: the folder contains the the training and testing data. See data/50_LR_3_HR
         for example.
     n_optimization_restarts: number of optimization you want to repeat. The GPy will
         choose the best hyperparameters among those repetitions. More is better.
