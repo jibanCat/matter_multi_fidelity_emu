@@ -59,8 +59,7 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
 
     At the subsequent level, the kernel is of the form
     .. math
-        k_{base,IS1}(x, x')k_{base,IS1}(y_{i-1}, y{i-1}') +
-        k_{base,IS2}(x, x')k_{base,IS2}(y_{i-1}, y{i-1}') + etc
+        k_{base,IS}(x, x')k_{base,IS}( [y_{i-1,IS1}, y_{i-1,IS2}, ... etc], [y{i-1,IS1}', y_{i-1,IS2}', ... etc]) +
         + k_{base,IS0}(x, x')
 
     :param base_kernel_class: GPy class definition of the kernel type to construct the kernels at
@@ -117,7 +116,7 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
         #     else:
         #         mixed_kernel = mixed_kernel + interaction_kernel * scale_kernel
 
-        interaction_kernel = base_kernel_class(n_input_dims, active_dims=all_base_dims_list[0], ARD=False,
+        interaction_kernel = base_kernel_class(n_input_dims, active_dims=all_base_dims_list[0], ARD=ARD,
                                             name='scale_kernel_no_ARD_' + fidelity_name)
         scale_kernel = base_kernel_class(n_output_dim * n_IS, active_dims=list(range(n_input_dims, n_input_dims + n_IS)), name='previous_level_' + fidelity_name, ARD=ARD)
 
@@ -126,7 +125,7 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
 
         # bias kernel is the covariance for the 0 level, \Sigma_0
         bias_kernel = base_kernel_class(n_input_dims, active_dims=all_base_dims_list[0],
-                                        ARD=False, name='bias_kernel_no_ARD_' + fidelity_name)
+                                        ARD=ARD, name='bias_kernel_no_ARD_' + fidelity_name)
 
         kernel_0 = mixed_kernel + bias_kernel
 
