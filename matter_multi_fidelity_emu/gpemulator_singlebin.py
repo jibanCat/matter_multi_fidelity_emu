@@ -488,6 +488,7 @@ class SingleBinNonLinearMISO:
         n_IS: int,
         n_samples: int = 500,
         optimization_restarts: int = 30,
+        ARD_true: bool = False,
     ):
         # a list of GP emulators
         models: List = []
@@ -516,7 +517,7 @@ class SingleBinNonLinearMISO:
             # make GP non linear MISO kernel
             base_kernel_1 = GPy.kern.RBF
             kernels = miso.make_non_linear_kernels(
-                base_kernel_1, n_IS, X.shape[1] - 1, ARD=True, n_output_dim=1,
+                base_kernel_1, n_IS, X.shape[1] - 1, ARD=True, n_output_dim=1, ARD_true=ARD_true,
             )
 
             model = miso.NonLinearMultiInformationModel(X, Y[:, [i]], n_IS, kernels=kernels, verbose=True, n_samples=n_samples, optimization_restarts=optimization_restarts)

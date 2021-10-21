@@ -45,7 +45,7 @@ from numpy.core import numeric
 
 
 def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
-                            n_IS: int, n_input_dims: int, ARD: bool=False,
+                            n_IS: int, n_input_dims: int, ARD: bool=False, ARD_true: bool=False,
                             n_output_dim: int = 1) -> List:
     """
     This function takes a base kernel class and constructs the structured multi-information source kernels
@@ -116,7 +116,7 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
         #     else:
         #         mixed_kernel = mixed_kernel + interaction_kernel * scale_kernel
 
-        interaction_kernel = base_kernel_class(n_input_dims, active_dims=all_base_dims_list[0], ARD=ARD,
+        interaction_kernel = base_kernel_class(n_input_dims, active_dims=all_base_dims_list[0], ARD=ARD_true,
                                             name='scale_kernel_no_ARD_' + fidelity_name)
         scale_kernel = base_kernel_class(n_output_dim * n_IS, active_dims=list(range(n_input_dims, n_input_dims + n_IS)), name='previous_level_' + fidelity_name, ARD=ARD)
 
@@ -125,7 +125,7 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
 
         # bias kernel is the covariance for the 0 level, \Sigma_0
         bias_kernel = base_kernel_class(n_input_dims, active_dims=all_base_dims_list[0],
-                                        ARD=ARD, name='bias_kernel_no_ARD_' + fidelity_name)
+                                        ARD=ARD_true, name='bias_kernel_no_ARD_' + fidelity_name)
 
         kernel_0 = mixed_kernel + bias_kernel
 
