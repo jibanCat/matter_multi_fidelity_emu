@@ -3,6 +3,7 @@ Build on top of make_results.py, but saving all relevant
 variables for future paper plots.
 """
 import os
+import json
 
 from examples.make_results import *
 
@@ -141,6 +142,19 @@ def do_validations(
     do_pred_exact(
         data, means_nargp, pred_exacts_nargp, label_mf="NARGP", figure_name="nargp"
     )
+
+    # saving hyperparameters
+    with open("ar1.json", "w") as f:
+        json.dump(ar1.to_dict(), f, indent=2)
+
+    with open("nargp.json", "w") as f:
+        json.dump(nargp.to_dict(), f, indent=2)
+
+    with open("hf_only.json", "w") as f:
+        json.dump(hf_only.to_dict(), f, indent=2)
+
+    with open("lf_only.json", "w") as f:
+        json.dump(lf_only.to_dict(), f, indent=2)
 
     # saving AR1
     os.makedirs("AR1/", exist_ok=True)
