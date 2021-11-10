@@ -14,7 +14,7 @@ sbatch <<EOT
 
 date
 
-cd /home/jibancat/Documents/PYTHON/emu_optimizer
+cd /rhome/jibancat/bigdata/emu_optimizer
 
 echo "----"
 # run python script
