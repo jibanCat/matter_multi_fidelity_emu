@@ -3,6 +3,8 @@
 # $1: training folder
 
 sbatch <<EOT
+#!/bin/bash
+
 #SBATCH --nodes=1
 #SBATCH --ntasks=8
 #SBATCH --mem=64G
