@@ -24,7 +24,8 @@ def do_validations(
     n_optimization_restarts: int = 20,
     n_fidelities: int = 2,
     turn_off_bias_nargp: bool = False,
-    output_folder: str = "output/50_dmonly_3_fullphysics"
+    output_folder: str = "output/50_dmonly_3_fullphysics",
+    ARD_last_fidelity: bool = False,
 ):
     """
     Train and test models, and plot
@@ -46,6 +47,8 @@ def do_validations(
         find the optimization result is not stable, try turning off bias kernel. Some time
         the training data at high-fidelity is not enough to train the bias kernel and
         induce some unstable predictions.
+    ARD_last_fidelity: whether to apply ARD for the last (highest) fidelity.
+        Default, False.
     """
     # create output folder, recursively
     os.makedirs(output_folder, exist_ok=True)
@@ -66,6 +69,7 @@ def do_validations(
         data.Y_train_norm,
         kernel_list=None,
         n_fidelities=n_fidelities,
+        ARD_last_fidelity=ARD_last_fidelity,
     )
     # non-linear multi-fidelity
     nargp = SingleBinNonLinearGP(
@@ -75,6 +79,7 @@ def do_validations(
         n_samples=500,
         optimization_restarts=n_optimization_restarts,
         turn_off_bias=turn_off_bias_nargp,
+        ARD_last_fidelity=ARD_last_fidelity,
     )
 
     # Single-fidelity
