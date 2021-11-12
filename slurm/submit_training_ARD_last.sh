@@ -25,7 +25,7 @@ n_optimization_restarts=20,\
 n_fidelities=2,\
 turn_off_bias_nargp=False,\
 ARD_last_fidelity=True,\
-output_folder='output/$1')"
+output_folder='output/ard_$1')"
 
 hostname
 
