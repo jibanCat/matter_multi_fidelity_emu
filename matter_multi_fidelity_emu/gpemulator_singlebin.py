@@ -320,7 +320,7 @@ class SingleBinNonLinearGP:
             base_kernel_1 = GPy.kern.RBF
             kernels = make_non_linear_kernels(
                 base_kernel_1, n_fidelities, X.shape[1] - 1, ARD=True, n_output_dim=1,
-                turn_off_bias=turn_off_bias,
+                turn_off_bias=turn_off_bias, ARD_last_fidelity=ARD_last_fidelity,
             )  # -1 for the multi-fidelity labels
 
             model = NonLinearMultiFidelityModel(
@@ -331,7 +331,6 @@ class SingleBinNonLinearGP:
                 verbose=True,
                 n_samples=n_samples,
                 optimization_restarts=optimization_restarts,
-                ARD_last_fidelity=ARD_last_fidelity,
             )
 
             models.append(model)
