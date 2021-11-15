@@ -181,9 +181,9 @@ def do_validations(
     # saving NARGP
     os.makedirs("NARGP/", exist_ok=True)
 
-    np.savetxt(os.path.join("NARGP", "all_gp_mean"), np.array(means_ar1))
-    np.savetxt(os.path.join("NARGP", "all_gp_var"), np.array(vars_ar1))
-    np.savetxt(os.path.join("NARGP", "pred_exacts"), np.array(pred_exacts_ar1))
+    np.savetxt(os.path.join("NARGP", "all_gp_mean"), np.array(means_nargp))
+    np.savetxt(os.path.join("NARGP", "all_gp_var"), np.array(vars_nargp))
+    np.savetxt(os.path.join("NARGP", "pred_exacts"), np.array(pred_exacts_nargp))
     np.savetxt(os.path.join("NARGP", "all_true"), np.array(data.Y_test[0]))
     np.savetxt(os.path.join("NARGP", "kf"), np.array(data.kf))
     # [HF] also save the predictions from hf-only
