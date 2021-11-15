@@ -9,7 +9,7 @@ sbatch <<EOT
 #SBATCH --ntasks=8
 #SBATCH --mem=64G
 #SBATCH --job-name=hydro_emu_ard_$1
-#SBATCH -p intel,batch
+#SBATCH -p intel
 #SBATCH --output="hydro_emu_ard_$1.out"
 
 date
