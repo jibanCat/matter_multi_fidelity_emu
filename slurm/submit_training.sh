@@ -14,11 +14,9 @@ sbatch <<EOT
 
 date
 
-cd /rhome/jibancat/bigdata/emu_optimizer
-
 echo "----"
 # run python script
-~/.conda/envs/simrun/bin/python -c "from examples.make_validations import *;\
+python -c "from examples.make_validations import *;\
 do_validations(\
 folder='data/$1',\
 n_optimization_restarts=20,\
