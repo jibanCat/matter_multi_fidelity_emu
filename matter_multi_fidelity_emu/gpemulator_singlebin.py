@@ -113,6 +113,8 @@ class SingleBinLinearGP:
     :param X_train:  (n_fidelities, n_points, n_dims) list of parameter vectors.
     :param Y_train:  (n_fidelities, n_points, k modes) list of matter power spectra.
     :param n_fidelities: number of fidelities stored in the list.
+    :param ARD_last_fidelity: whether to apply ARD for the last (highest) fidelity.
+        Default, False.
     """
 
     def __init__(
@@ -122,6 +124,7 @@ class SingleBinLinearGP:
         kernel_list: Optional[List],
         n_fidelities: int,
         likelihood: GPy.likelihoods.Likelihood = None,
+        ARD_last_fidelity: bool = False,
     ):
         # a list of GP emulators
         gpy_models: List = []
@@ -165,7 +168,7 @@ class SingleBinLinearGP:
                 
                 # final fidelity not ARD due to lack of training data
                 if j == n_fidelities - 1:
-                    kernel = GPy.kern.RBF(nparams, ARD=False)
+                    kernel = GPy.kern.RBF(nparams, ARD=ARD_last_fidelity)
 
                 kernel_list.append(kernel)
 
@@ -276,6 +279,8 @@ class SingleBinNonLinearGP:
     :param n_fidelities: number of fidelities stored in the list.
     :param n_samples: Number of samples to use to do quasi-Monte-Carlo integration at each fidelity.
     :param optimization_restarts: number of optimization restarts you want in GPy.
+    :param ARD_last_fidelity: whether to apply ARD for the last (highest) fidelity.
+        Default, False.
     """
 
     def __init__(
@@ -286,6 +291,7 @@ class SingleBinNonLinearGP:
         n_samples: int = 500,
         optimization_restarts: int = 30,
         turn_off_bias: bool = False,
+        ARD_last_fidelity: bool = False
     ):
         # a list of GP emulators
         models: List = []
@@ -314,10 +320,18 @@ class SingleBinNonLinearGP:
             base_kernel_1 = GPy.kern.RBF
             kernels = make_non_linear_kernels(
                 base_kernel_1, n_fidelities, X.shape[1] - 1, ARD=True, n_output_dim=1,
-                turn_off_bias=turn_off_bias,
+                turn_off_bias=turn_off_bias, ARD_last_fidelity=ARD_last_fidelity,
             )  # -1 for the multi-fidelity labels
 
-            model = NonLinearMultiFidelityModel(X, Y[:, [i]], n_fidelities, kernels=kernels, verbose=True, n_samples=n_samples, optimization_restarts=optimization_restarts)
+            model = NonLinearMultiFidelityModel(
+                X,
+                Y[:, [i]],
+                n_fidelities,
+                kernels=kernels,
+                verbose=True,
+                n_samples=n_samples,
+                optimization_restarts=optimization_restarts,
+            )
 
             models.append(model)
 

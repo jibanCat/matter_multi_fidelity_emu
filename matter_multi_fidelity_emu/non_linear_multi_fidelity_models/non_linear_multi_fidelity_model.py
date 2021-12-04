@@ -29,7 +29,8 @@ from emukit.multi_fidelity.convert_lists_to_array import convert_y_list_to_array
 def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
                             n_fidelities: int, n_input_dims: int, ARD: bool=False,
                             n_output_dim: int = 1,
-                            turn_off_bias: bool = False) -> List:
+                            turn_off_bias: bool = False,
+                            ARD_last_fidelity: bool = False) -> List:
     """
     This function takes a base kernel class and constructs the structured multi-fidelity kernels
 
@@ -51,6 +52,9 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
     :param ARD: If True, uses different lengthscales for different dimensions. Otherwise the same lengthscale is used
                 for all dimensions. Default False.
     :param turn_off_bias: do not apply bias kernel for high-fidelity.
+    :param ARD_last_fidelity: whether to apply ARD for the last (highest) fidelity.
+        Default, False.
+
     :return: A list of kernels with one entry for each fidelity starting from lowest to highest fidelity.
     """
 
@@ -59,11 +63,11 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
     kernels = [base_kernel_class(n_input_dims, active_dims=base_dims_list, ARD=ARD, name='kern_fidelity_1')]
     for i in range(1, n_fidelities):
         fidelity_name = 'fidelity' + str(i + 1)
-        interaction_kernel = base_kernel_class(n_input_dims, active_dims=base_dims_list, ARD=False,
+        interaction_kernel = base_kernel_class(n_input_dims, active_dims=base_dims_list, ARD=ARD_last_fidelity,
                                                name='scale_kernel_no_ARD_' + fidelity_name)
         scale_kernel = base_kernel_class(n_output_dim, active_dims=out_dims_list, name='previous_fidelity_' + fidelity_name)
         bias_kernel = base_kernel_class(n_input_dims, active_dims=base_dims_list,
-                                        ARD=False, name='bias_kernel_no_ARD_' + fidelity_name)
+                                        ARD=ARD_last_fidelity, name='bias_kernel_no_ARD_' + fidelity_name)
         if turn_off_bias:
             kernels.append(interaction_kernel * scale_kernel)
         else:
