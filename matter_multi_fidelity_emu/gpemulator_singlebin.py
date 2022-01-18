@@ -162,13 +162,14 @@ class SingleBinLinearGP:
             for j in range(n_fidelities):
                 nparams = np.shape(X_train[j])[1]
 
-                # kernel = GPy.kern.Linear(nparams, ARD=True)
+                kernel = GPy.kern.Linear(nparams, ARD=True)
                 # kernel = GPy.kern.RatQuad(nparams, ARD=True)
-                kernel = GPy.kern.RBF(nparams, ARD=True)
+                kernel += GPy.kern.RBF(nparams, ARD=True)
                 
                 # final fidelity not ARD due to lack of training data
                 if j == n_fidelities - 1:
-                    kernel = GPy.kern.RBF(nparams, ARD=ARD_last_fidelity)
+                    kernel = GPy.kern.Linear(nparams, ARD=ARD_last_fidelity)
+                    kernel += GPy.kern.RBF(nparams, ARD=ARD_last_fidelity)
 
                 kernel_list.append(kernel)
 
