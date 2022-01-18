@@ -147,6 +147,9 @@ class SingleBinLinearGP:
                 "One or more points has a higher fidelity index than number of fidelities"
             )
 
+        # TODO: check if ARD works
+        print("AR1: Linear + RBF, ARD on for HF layer.")
+
         # make a GP on each P(k) bin
         for i in range(Y.shape[1]):
             y_metadata = {"output_index": X[:, -1].astype(int)}
@@ -168,8 +171,9 @@ class SingleBinLinearGP:
                 
                 # final fidelity not ARD due to lack of training data
                 if j == n_fidelities - 1:
-                    kernel = GPy.kern.Linear(nparams, ARD=ARD_last_fidelity)
-                    kernel += GPy.kern.RBF(nparams, ARD=ARD_last_fidelity)
+                    # TODO: check if ARD works
+                    kernel = GPy.kern.Linear(nparams, ARD=True)
+                    kernel += GPy.kern.RBF(nparams, ARD=True)
 
                 kernel_list.append(kernel)
 
@@ -314,6 +318,9 @@ class SingleBinNonLinearGP:
             raise ValueError(
                 "One or more points has a higher fidelity index than number of fidelities"
             )
+
+        # TODO: check added Linear
+        print("NARGP: Linear in scale and bias kernel, ARD off in HF.")
 
         # make a GP on each P(k) bin
         for i in range(Y.shape[1]):

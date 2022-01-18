@@ -73,7 +73,8 @@ def make_non_linear_kernels(base_kernel_class: Type[GPy.kern.Kern],
             n_output_dim, active_dims=out_dims_list, name='previous_fidelity_' + fidelity_name
         ) + GPy.kern.Linear(n_output_dim, active_dims=out_dims_list, name='previous_fidelity_' + fidelity_name + "_linear") # TODO: check added Linear
         bias_kernel = base_kernel_class(n_input_dims, active_dims=base_dims_list,
-                                        ARD=ARD_last_fidelity, name='bias_kernel_no_ARD_' + fidelity_name)
+                                        ARD=ARD_last_fidelity, name='bias_kernel_no_ARD_' + fidelity_name
+        ) + GPy.kern.Linear(n_input_dims, active_dims=base_dims_list, ARD=ARD_last_fidelity, name='bias_kernel_no_ARD_' + fidelity_name + "_linear") # TODO: check added Linear
         if turn_off_bias:
             kernels.append(interaction_kernel * scale_kernel)
         else:
