@@ -164,7 +164,8 @@ class SingleBinLinearGP:
 
                 # kernel = GPy.kern.Linear(nparams, ARD=True)
                 # kernel = GPy.kern.RatQuad(nparams, ARD=True)
-                kernel = GPy.kern.RBF(nparams, ARD=True)
+                # TODO: check the effect of turning ARD off
+                kernel = GPy.kern.RBF(nparams, ARD=False)
                 
                 # final fidelity not ARD due to lack of training data
                 if j == n_fidelities - 1:
@@ -319,8 +320,9 @@ class SingleBinNonLinearGP:
             # make GP non linear kernel
             base_kernel_1 = GPy.kern.RBF
             kernels = make_non_linear_kernels(
-                base_kernel_1, n_fidelities, X.shape[1] - 1, ARD=True, n_output_dim=1,
-                turn_off_bias=turn_off_bias, ARD_last_fidelity=ARD_last_fidelity,
+                base_kernel_1, n_fidelities, X.shape[1] - 1,
+                ARD=False, # TODO: check the effect of turning ARD off
+                n_output_dim=1, turn_off_bias=turn_off_bias, ARD_last_fidelity=ARD_last_fidelity,
             )  # -1 for the multi-fidelity labels
 
             model = NonLinearMultiFidelityModel(
