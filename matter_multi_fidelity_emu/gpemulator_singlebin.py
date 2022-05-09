@@ -61,7 +61,7 @@ class SingleBinGP:
 
         self.name = "single_fidelity"
 
-    def optimize_restarts(self, n_optimization_restarts: int) -> None:
+    def optimize_restarts(self, n_optimization_restarts: int, parallel: bool = False) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
@@ -69,7 +69,7 @@ class SingleBinGP:
 
         _log.info("\n --- Optimization: ---\n".format(self.name))
         for i,gp in enumerate(self.gpy_models):
-            gp.optimize_restarts(n_optimization_restarts)
+            gp.optimize_restarts(n_optimization_restarts, parallel=parallel)
             models.append(gp)
 
         self.models = models
@@ -182,7 +182,7 @@ class SingleBinLinearGP:
 
         self.name = "ar1"
 
-    def optimize(self, n_optimization_restarts: int) -> None:
+    def optimize(self, n_optimization_restarts: int, parallel: bool = False) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
@@ -207,7 +207,7 @@ class SingleBinLinearGP:
                 n_optimization_restarts,
                 verbose=model.verbose_optimization,
                 robust=True,
-                parallel=False,
+                parallel=parallel,
             )
 
             # unfix noise and re-optimize
@@ -222,7 +222,7 @@ class SingleBinLinearGP:
                 n_optimization_restarts,
                 verbose=model.verbose_optimization,
                 robust=True,
-                parallel=False,
+                parallel=parallel,
             )
 
             models.append(model)
@@ -339,7 +339,7 @@ class SingleBinNonLinearGP:
 
         self.name = "nargp"
 
-    def optimize(self) -> None:
+    def optimize(self, parallel: bool = False) -> None:
         """
         Optimize GP on each bin of the power spectrum.
         """
@@ -352,12 +352,12 @@ class SingleBinNonLinearGP:
             for m in gp.models:
                 m.Gaussian_noise.variance.fix(1e-6)
             
-            gp.optimize()
+            gp.optimize(parallel=parallel)
 
             for m in gp.models:
                 m.Gaussian_noise.variance.unfix()
             
-            gp.optimize()
+            gp.optimize(parallel=parallel)
 
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
