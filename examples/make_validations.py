@@ -26,6 +26,7 @@ def do_validations(
     turn_off_bias_nargp: bool = False,
     output_folder: str = "output/50_dmonly_3_fullphysics",
     ARD_last_fidelity: bool = False,
+    parallel: bool = False,
 ):
     """
     Train and test models, and plot
@@ -88,10 +89,10 @@ def do_validations(
     lf_only = SingleBinGP(data.X_train_norm[0], data.Y_train[0])
 
     # optimize each model
-    ar1.optimize(n_optimization_restarts=n_optimization_restarts)
-    nargp.optimize()
-    hf_only.optimize_restarts(n_optimization_restarts=n_optimization_restarts)
-    lf_only.optimize_restarts(n_optimization_restarts=n_optimization_restarts)
+    ar1.optimize(n_optimization_restarts=n_optimization_restarts, parallel=parallel)
+    nargp.optimize(parallel=parallel)
+    hf_only.optimize_restarts(n_optimization_restarts=n_optimization_restarts, parallel=parallel)
+    lf_only.optimize_restarts(n_optimization_restarts=n_optimization_restarts, parallel=parallel)
 
     # testing set
     means_ar1, vars_ar1, pred_exacts_ar1 = validate_mf(data, model=ar1)
